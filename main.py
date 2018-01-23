@@ -24,9 +24,10 @@ rec_trans_2 = np.array([[1,0],[1,0]]) # if action is not record
 
 # summarize frequencies of each state.
 freq_ctr = np.zeros(warning_anomaly_state_space) # a (648,) array to record frequency of each state
-freq_threshold = 50 # threshold of frequency of warning and anomalies.
+freq_threshold = 100 # threshold of frequency of warning and anomalies.
 memory_cost = 0
 
+w = [1,2,1,1]
 '''
 load pre-generated WA_state list
 '''
@@ -84,20 +85,26 @@ def state_update(s,a,memo_cost):
     # elif a == 1 and prev_a == 0:
     #     rec_state = -1 # start recording
     # else:
-
     if a: # if record, check whether memory exceed the max.
         memo_cost += 1
+        memo_state = int(np.floor(memo_cost/max_memo)) # memo state becomes how much the memory limitation is exceeded
+        memo_state = 5 if memo_state > 5 else memo_state
+        '''
         if memo_cost > max_memo:
             memo_state = 1 # exceed max memory
         else:
             memo_state = 0
+        '''
     else:
         memo_state = s[num_WA+1] # if don't record, the memory_state maintain
+    freq_state = int(np.floor(freq_ctr[WA_state_idx]/freq_threshold)) # frequency state becomes how frequent the state is
+    freq_state = 5 if freq_state > 5 else freq_state
+    '''
     if freq_ctr[WA_state_idx] > freq_threshold:
         freq_state = 1 # the new WA_state is too frequent
     else:
         freq_state = 0
-
+    '''
     '''Assign possible next state'''
     possible_state_list = []
     for idx in possible_state_idx:
@@ -113,22 +120,25 @@ def compute_reward(new_s, s):
     if s[num_WA] == 0 and new_s[num_WA] == 1:
         R_recording = -1 # negative reward if start recording
         R_anomaly = np.sum(new_s[0:num_WA]) # positive anomaly reward if start recording
-        R_memory = - new_s[num_WA + 1] # negative memory_limitation reward if start recording
+        R_memory = - new_s[num_WA+1] # negative memory_limitation reward if start recording
+        R_freq = - s[num_WA+2]
+        print("R_freq: ", R_freq)
     elif s[num_WA] == 1 and new_s[num_WA] == 0:
         R_recording = 1 # positive reward if stop recording
         R_anomaly = 0 # 0 anomaly reward if stop recording
         R_memory = 0 # 0 memory limitation reward if stop recording
-
+        R_freq = 0
     elif s[num_WA] == 1 and new_s[num_WA] == 1:
-        R_recording = 0 # 0 recording reward if maintain
+        R_recording = -1 # negative recording reward if maintain recording
         R_anomaly = np.sum(new_s[0:num_WA])  # positive anomaly reward if keep recording
         R_memory = - new_s[num_WA+1] # negative memory_limitation reward if keep recording
+        R_freq = - s[num_WA+2]
     else:
         R_recording = 0  # 0 recording reward if maintain
         R_anomaly = 0 # 0 anomaly reward if
         R_memory = 0
-
-    reward = R_anomaly + R_recording + R_memory
+        R_freq = 0
+    reward = w[0]*R_anomaly + w[1]*R_recording + w[2]*R_memory + w[3]*R_freq
 
     return float(reward)
 
@@ -158,8 +168,6 @@ if __name__ == "__main__":
     anomaly_score = process_warning_anomaly(file_name)
     # anomaly_score = [0,0,0,0,0,1,1,0,1,1,1,0,1,0,0,0,0,1,1,1,0,1,0,0,0]
     prev_s = s
-    # input("continue..")
-
     file = open('optimal_action.txt', 'w')
     optimal_action_path = []
     for i in range(anomaly_score.shape[0]):#anomaly_score.shape[0]
@@ -169,11 +177,13 @@ if __name__ == "__main__":
         '''Update Warning/Anomaly frequency'''
         freq_ctr[WA_state_index] += 1
 
-        reward = compute_reward(s, prev_s)
+        # reward = compute_reward(s, prev_s)
 
 
         print ("State: ", s)
-        Q_value_list = reward + _lambda * decision_tree(s,1, memory_cost)
+        # Q_value_list = reward + _lambda * decision_tree(s,1, memory_cost)
+        Q_value_list = _lambda * decision_tree(s,1, memory_cost)
+
         print ("Q_value_list: ", Q_value_list)
 
         '''Find the optimal action'''
