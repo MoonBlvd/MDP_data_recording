@@ -113,19 +113,24 @@ def compute_reward(new_s, s):
     if s[num_WA] == 0 and new_s[num_WA] == 1:
         R_recording = -1 # negative reward if start recording
         R_anomaly = np.sum(new_s[0:num_WA]) # positive anomaly reward if start recording
+        R_memory = - new_s[num_WA + 1] # negative memory_limitation reward if start recording
     elif s[num_WA] == 1 and new_s[num_WA] == 0:
         R_recording = 1 # positive reward if stop recording
         R_anomaly = 0 # 0 anomaly reward if stop recording
+        R_memory = 0 # 0 memory limitation reward if stop recording
+
     elif s[num_WA] == 1 and new_s[num_WA] == 1:
         R_recording = 0 # 0 recording reward if maintain
         R_anomaly = np.sum(new_s[0:num_WA])  # positive anomaly reward if keep recording
+        R_memory = - new_s[num_WA+1] # negative memory_limitation reward if keep recording
     else:
         R_recording = 0  # 0 recording reward if maintain
         R_anomaly = 0 # 0 anomaly reward if
+        R_memory = 0
 
-    reward = R_anomaly + R_recording - new_s[num_WA+1]
+    reward = R_anomaly + R_recording + R_memory
 
-    return reward.astype(float)
+    return float(reward)
 
 def decision_tree(s,i,memo_cost):
     inner_score_list = np.zeros(len(action_list)) # there are multiple possible new states given state and action
