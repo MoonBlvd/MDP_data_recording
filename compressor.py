@@ -29,7 +29,7 @@ class simpleCompress():
 if __name__ == '__main__':
     compressor = simpleCompress()
     img = cv2.imread('test_image.png')
-    quality = 85
+    quality = 100
     level = 9
     start_time = time.time()
     new_size = compressor.run_pillow(img, quality)
