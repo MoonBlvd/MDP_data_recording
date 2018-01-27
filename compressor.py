@@ -49,7 +49,7 @@ if __name__ == '__main__':
     elif ext == '.png':
         param_list = level_list
         qual_param = cv2.IMWRITE_PNG_COMPRESSION
-    elif ext == '.ppm' or '.PGM'or 'PBM':
+    elif ext == '.ppm' or '.pgm'or '.pbm':
         param_list = binary_list
         qual_param = cv2.IMWRITE_PXM_BINARY
     else:
