@@ -9,15 +9,17 @@ import sys
 class simpleCompress():
     def __init__(self):
         self.a = 1
-    def run_pillow(self,img,quality,ext):
+    def run_pillow(self,img,quality,ext,i=0):
+        img_name = str(format(i,'04d'))+ext
         image = Image.fromarray(img)
-        image.save('000000'+ext, ptimize=True, quality=quality)
-        new_size = os.stat(os.path.join(os.getcwd(), '000000'+ext)).st_size/1024
+        image.save(img_name, ptimize=True, quality=quality)
+        new_size = os.stat(os.path.join(os.getcwd(), img_name)).st_size/1024
         os.remove(os.path.join(os.getcwd(), '000000'+ext))
         return new_size
-    def run_opencv(self,img,quality,ext,qual_param):
-        cv2.imwrite('000000'+ext, img, [qual_param, quality])
-        new_size = os.stat(os.path.join(os.getcwd(), '000000'+ext)).st_size/1024
+    def run_opencv(self,img,quality,ext,qual_param,i=0):
+        img_name = str(format(i,'04d'))+ext
+        cv2.imwrite(img_name, img, [qual_param, quality])
+        new_size = os.stat(os.path.join(os.getcwd(), img_name)).st_size/1024
         #os.remove(os.path.join(os.getcwd(), '000000'+ext))
         return new_size
     def run_opencv_encoder(self,img,quality,ext,qual_param):
@@ -53,14 +55,14 @@ if __name__ == '__main__':
     else:
         raise NameError('Extension name not recognized')
 
-    for quality in param_list:
+    for i,quality in enumerate(param_list):
         # start_time = time.time()
         # new_size = compressor.run_opencv(img, quality,ext,qual_param)
         # elapsed_time = time.time() - start_time
         # print ("OpenCV: ", new_size, "KB; Time: ",elapsed_time, 'second')
         
         start_time = time.time()
-        new_size = compressor.run_opencv(img, quality,ext, qual_param)
+        new_size = compressor.run_opencv(img, quality,ext, qual_param,i)
         elapsed_time = time.time() - start_time
         print ("OpenCV: ", new_size, "KB; Time: ",elapsed_time, 'second')
 
@@ -68,4 +70,3 @@ if __name__ == '__main__':
         new_size = compressor.run_opencv_encoder(img, quality,ext, qual_param)
         elapsed_time = time.time() - start_time
         print ("OpenCV: " + str(format(new_size,'.4f')) + "\%; Time: " + str(format(elapsed_time,'.4f')) + 'second')
-        break
