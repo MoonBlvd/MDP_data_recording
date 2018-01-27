@@ -33,6 +33,7 @@ if __name__ == '__main__':
     level_list = [0,1,2,3,4,5,6,7,8,9]
     binary_list = [0,1]
     ext = '.webp'
+
     start_time = time.time()
     print ('Compression is: '+ext)
 
@@ -52,14 +53,15 @@ if __name__ == '__main__':
         raise NameError('Extension name not recognized')
 
     for quality in param_list:
-        new_size = compressor.run_pillow(img, quality,ext)
-        elapsed_time = time.time() - start_time
-        print ("PIL: " + str(format(new_size,'.4f'))+ "KB; Time: "+ str(format(elapsed_time,'.4f')) + 'second')
-
         # start_time = time.time()
         # new_size = compressor.run_opencv(img, quality,ext,qual_param)
         # elapsed_time = time.time() - start_time
         # print ("OpenCV: ", new_size, "KB; Time: ",elapsed_time, 'second')
+        
+        #start_time = time.time()
+        #new_size = compressor.run_opencv(img, quality,ext)
+        #elapsed_time = time.time() - start_time
+        #print ("OpenCV: ", new_size, "KB; Time: ",elapsed_time, 'second')
 
         start_time = time.time()
         new_size = compressor.run_opencv_encoder(img, quality,ext, qual_param)
