@@ -33,7 +33,7 @@ if __name__ == '__main__':
     compressor = simpleCompress()
     img = cv2.imread('test_image.png')
     quality_list = [10,20,30,40,50,60,70,80,90,100]
-    level_list = [0,1,2,3,4,5,6,7,8,9]
+    level_list = [9,8,7,6,5,4,3,2,1,0]
     binary_list = [0,1]
     ext = sys.argv[1]
 
@@ -61,10 +61,10 @@ if __name__ == '__main__':
         # elapsed_time = time.time() - start_time
         # print ("OpenCV: ", new_size, "KB; Time: ",elapsed_time, 'second')
         
-        start_time = time.time()
-        new_size = compressor.run_opencv(img, quality,ext, qual_param,i)
-        elapsed_time = time.time() - start_time
-        print ("OpenCV: ", new_size, "KB; Time: ",elapsed_time, 'second')
+        # start_time = time.time()
+        # new_size = compressor.run_opencv(img, quality,ext, qual_param,i)
+        # elapsed_time = time.time() - start_time
+        # print ("OpenCV: ", new_size, "KB; Time: ",elapsed_time, 'second')
 
         start_time = time.time()
         new_size = compressor.run_opencv_encoder(img, quality,ext, qual_param)
