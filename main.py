@@ -45,7 +45,7 @@ with open('state_list.txt') as f:
 
 
 def init_state():
-    warning_anomaly_state = np.zeros(num_warning+num_anomaly)
+    warning_anomaly_state = np.zeros(num_warning+num_anomaly).astype(int)
     ambient_state_discrete_i = compute_WA_state_index(warning_anomaly_state)
     ambient_state_discrete_u = compute_ambient_state_u(warning_anomaly_state)
     recording = 0 # not recoding at the beginning
@@ -176,7 +176,7 @@ def compute_memo_reward(new_s,s):
     return R_memory
 
 def compute_freq_reward(new_s,s):
-    if new_s['rec'] == 1 and s['freq'] > freq_threshold:
+    if new_s['rec'] == 1 and s['freq'][s['i']] > freq_threshold:
         R_freq = - 1
     else:
         R_freq = 0
@@ -201,7 +201,7 @@ def decision_tree(s,i,memo_cost,img):
     return inner_score_list.astype(float)
 
 def compute_ambient_state_u(anomaly_scores):
-    return np.sum(anomaly_score[0:3]) + 0.5*np.sum(anomaly_score[3:7])
+    return np.sum(anomaly_scores[0:3]) + 0.5*np.sum(anomaly_scores[3:7])
 
 if __name__ == "__main__":
     # initialize compressor
@@ -260,7 +260,7 @@ if __name__ == "__main__":
         optimal_action = action_list[int(max_idx/len(action_list)**(horizon-1))]
 
         '''The action should be recording if it's in recording mode and buffer size is smaller than the minimum size'''
-        if s[num_WA]==1 and buf_size < min_buf_size:
+        if s['rec']==1 and buf_size < min_buf_size:
             optimal_action = 1
         optimal_action_path.append(optimal_action)
         print ("Optimal action: ", optimal_action)
@@ -268,8 +268,8 @@ if __name__ == "__main__":
         '''Update state using the optimal action'''
         print("Cost of memory:", memory_cost)
         prev_s = s
-        possible_s,_ ,memory_cost = state_update(s,optimal_action,memory_cost)
-        s = s[0] # since the system state portion is deterministic given action, we can select any possible state as the new state.
+        possible_s,_ ,memory_cost = state_update(s,optimal_action,memory_cost, img)
+        s = possible_s[0] # since the system state portion is deterministic given action, we can select any possible state as the new state.
         if s['rec'] >= 1:
             buf_size += 1
         else:
