@@ -16,11 +16,19 @@ class simpleCompress():
         new_size = os.stat(os.path.join(os.getcwd(), img_name)).st_size/1024
         os.remove(os.path.join(os.getcwd(), '000000'+ext))
         return new_size
-    def run_opencv(self,img,quality,ext,qual_param,i=0):
+    def run_opencv(self,img,ext,qual_param,quality=100,i=0,a=0):
+        if a == 1: # strong compress
+            quality = 20
+        elif a == 2: # weak compress
+            quality = 80
+        elif a == 3: # no compress
+            quality = 100
+        else:
+            quality = 0
         img_name = str(format(i,'04d'))+ext
         cv2.imwrite(img_name, img, [qual_param, quality])
-        new_size = os.stat(os.path.join(os.getcwd(), img_name)).st_size/1024
-        #os.remove(os.path.join(os.getcwd(), '000000'+ext))
+        new_size = os.stat(os.path.join(os.getcwd(), img_name)).st_size/1024 # in KB
+        os.remove(os.path.join(os.getcwd(), img_name))
         return new_size
     def run_opencv_encoder(self,img,ext,qual_param,quality=100,a=0):
         if a == 1: # strong compress

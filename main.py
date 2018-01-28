@@ -5,6 +5,7 @@ from process_warning_anomaly_data import *
 from compressor import simpleCompress
 import cv2
 import copy
+import time
 
 horizon = 3
 _lambda = 0.9
@@ -101,7 +102,8 @@ def state_update(s,a,memo_cost,img):
     #     rec_state = -1 # start recording
     # else:
     if a>=1: # if record, check whether memory exceed the max.
-        new_s['memo'] += compressor.run_opencv_encoder(img, ext, cv2.IMWRITE_JPEG_QUALITY,a=a)
+        # new_s['memo'] += compressor.run_opencv_encoder(img, ext, cv2.IMWRITE_JPEG_QUALITY,a=a)
+        new_s['memo'] += compressor.run_opencv(img,ext,cv2.IMWRITE_JPEG_QUALITY,a=a)
         memo_cost += 1
         #memo_state = int(np.floor(memo_cost/max_memo)) # memo state becomes how much the memory limitation is exceeded
         #memo_state = 5 if memo_state > 5 else memo_state
@@ -228,6 +230,8 @@ if __name__ == "__main__":
     optimal_action_path = []
     i = 0
     while cap.isOpened():
+        start_time = time.time()
+
         ret,img = cap.read()
         frame_ctr += 1
         '''Exit if the Mobileye data is finished'''
@@ -276,10 +280,13 @@ if __name__ == "__main__":
         else:
             buf_size = 0
 
+        elapsed_time = time.time() - start_time
+
         print("Cost of memory:", s['memo'])
         print("Discrete ambient state i:", s['i'])
         print("Discrete ambient state u:", s['u'])
         print("Continues ambient state:", s['freq'][s['i']])
+        print("Elapsed_time:", elapsed_time)
         i += 1
             # new_s = state_update(s, a)
             # r = compute_reward(new_s)
