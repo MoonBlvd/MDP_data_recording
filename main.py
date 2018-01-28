@@ -4,6 +4,7 @@ import pdb
 from process_warning_anomaly_data import *
 from compressor import simpleCompress
 import cv2
+import copy
 
 horizon = 3
 _lambda = 0.9
@@ -83,23 +84,24 @@ def state_update(s,a,memo_cost,img):
     :param a: the action, a = 0 (no record) or 1 (record)
     :return: all possible states and their probabilities
     '''
+    new_s = copy.deepcopy(s)
     '''Read WA_state and find possible next WA_state'''
-    WA_state_idx = s['i']
+    WA_state_idx = new_s['i']
     possible_state_idx = np.where(WA_trans[WA_state_idx, :] != 0)[0]
     probabilities = WA_trans[WA_state_idx, possible_state_idx]
 
     '''Find possible system state given state and action'''
     # rec_state = s[num_WA] ^ a # use XOR to find whether the recording state is flipped.
 
-    s['rec'] = a # the recording state depends on the previous action
+    new_s['rec'] = a # the recording state depends on the previous action
 
     # if a == 0 and prev_a == 1:
     #     rec_state = 1 # stop recording
     # elif a == 1 and prev_a == 0:
     #     rec_state = -1 # start recording
     # else:
-    if a: # if record, check whether memory exceed the max.
-        s['memo'] += compressor.run_opencv_encoder(img, ext, cv2.IMWRITE_JPEG_QUALITY,a=a)
+    if a>=1: # if record, check whether memory exceed the max.
+        new_s['memo'] += compressor.run_opencv_encoder(img, ext, cv2.IMWRITE_JPEG_QUALITY,a=a)
         memo_cost += 1
         #memo_state = int(np.floor(memo_cost/max_memo)) # memo state becomes how much the memory limitation is exceeded
         #memo_state = 5 if memo_state > 5 else memo_state
@@ -109,8 +111,8 @@ def state_update(s,a,memo_cost,img):
         else:
             memo_state = 0
         '''
-    else:
-        s['memo'] = s['memo'] # if don't record, the memory_state maintain
+    # else:
+        # new_s['memo'] = s['memo'] # if don't record, the memory_state maintain
 
     # freq_state = int(np.floor(freq_ctr[WA_state_idx]/freq_threshold)) # frequency state becomes how frequent the state is
     # freq_state = 5 if freq_state > 5 else freq_state
@@ -123,7 +125,7 @@ def state_update(s,a,memo_cost,img):
     '''Assign possible next state'''
     possible_state_list = []
     for idx in possible_state_idx:
-        possible_s = s
+        possible_s = copy.deepcopy(new_s)
         possible_s['i'] = idx
         state_array = compute_WA_state_array(idx)
         possible_s['u'] = compute_ambient_state_u(state_array)
@@ -239,18 +241,16 @@ if __name__ == "__main__":
         while video_time > time[i] + 2 * frame_time:
             # if message lag, keep reading message
             i = i + 1
-
+        print ('==================')
         print ('Iteration: ', i)
         # s[0:num_WA] = anomaly_score[i,:]
         s['i'] = compute_WA_state_index(anomaly_score[i,:])
         s['u'] = compute_ambient_state_u(anomaly_score[i,:])
         s['freq'][s['i']] += 1
-
         # reward = compute_reward(s, prev_s)
 
-        print ("State: ", s)
         # Q_value_list = reward + _lambda * decision_tree(s,1, memory_cost)
-        Q_value_list = _lambda * decision_tree(s,1, memory_cost,img)
+        Q_value_list = _lambda * decision_tree(copy.deepcopy(s),1, memory_cost,img)
 
         print ("Q_value_list: ", Q_value_list)
 
@@ -266,15 +266,20 @@ if __name__ == "__main__":
         print ("Optimal action: ", optimal_action)
 
         '''Update state using the optimal action'''
-        print("Cost of memory:", memory_cost)
-        prev_s = s
+        prev_s = copy.deepcopy(s)
+
         possible_s,_ ,memory_cost = state_update(s,optimal_action,memory_cost, img)
         s = possible_s[0] # since the system state portion is deterministic given action, we can select any possible state as the new state.
+        s['freq'][s['i']] -= 1 #  the state update function will add an extra freq count so we need to subtract.
         if s['rec'] >= 1:
             buf_size += 1
         else:
             buf_size = 0
 
+        print("Cost of memory:", s['memo'])
+        print("Discrete ambient state i:", s['i'])
+        print("Discrete ambient state u:", s['u'])
+        print("Continues ambient state:", s['freq'][s['i']])
         i += 1
             # new_s = state_update(s, a)
             # r = compute_reward(new_s)
