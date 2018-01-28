@@ -222,7 +222,7 @@ if __name__ == "__main__":
     min_buf_size = 20
     s, U = init_state()
     file_name = '05182017.csv'
-    anomaly_score, time = process_warning_anomaly(file_name)
+    anomaly_score, time_array = process_warning_anomaly(file_name)
     num_frames = anomaly_score.shape[0]
     # anomaly_score = [0,0,0,0,0,1,1,0,1,1,1,0,1,0,0,0,0,1,1,1,0,1,0,0,0]
     prev_s = s
@@ -239,10 +239,10 @@ if __name__ == "__main__":
             break
         '''downsample video(29.97fps) to data frame frequency(~10Hz)'''
         video_time = frame_ctr * frame_time  # + 2.8819 # the video is 30fps
-        if video_time < time[i] - frame_time:
+        if video_time < time_array[i] - frame_time:
             # if video lag, keep reading video frames
             continue
-        while video_time > time[i] + 2 * frame_time:
+        while video_time > time_array[i] + 2 * frame_time:
             # if message lag, keep reading message
             i = i + 1
         print ('==================')
