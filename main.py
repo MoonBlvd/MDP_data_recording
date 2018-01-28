@@ -209,7 +209,8 @@ def compute_ambient_state_u(anomaly_scores):
 
 if __name__ == "__main__":
     # initialize compressor
-    compressor = simpleCompress()
+    output_path = 'recorded_img/05182017/'
+    compressor = simpleCompress(output_path)
     # read video
     video_path = '../Smart_Black_Box/data/videos/'
     video_name = '05182017_video1080p.mp4'
@@ -264,8 +265,8 @@ if __name__ == "__main__":
         optimal_action = action_list[int(max_idx/len(action_list)**(horizon-1))]
 
         '''The action should be recording if it's in recording mode and buffer size is smaller than the minimum size'''
-        if s['rec']==1 and buf_size < min_buf_size:
-            optimal_action = 1
+        if s['rec']>=1 and buf_size < min_buf_size:
+            optimal_action = optimal_action_path[-1]
         optimal_action_path.append(optimal_action)
         print ("Optimal action: ", optimal_action)
 
@@ -273,6 +274,10 @@ if __name__ == "__main__":
         prev_s = copy.deepcopy(s)
 
         possible_s,_ ,memory_cost = state_update(s,optimal_action,memory_cost, img)
+        if optimal_action >= 0:
+            compressor.run_opencv(img, ext, cv2.IMWRITE_JPEG_QUALITY, i=i, a=optimal_action,persistent_record=True)
+
+
         s = possible_s[0] # since the system state portion is deterministic given action, we can select any possible state as the new state.
         s['freq'][s['i']] -= 1 #  the state update function will add an extra freq count so we need to subtract.
         if s['rec'] >= 1:

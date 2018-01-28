@@ -7,8 +7,8 @@ import numpy as np
 import sys
 
 class simpleCompress():
-    def __init__(self):
-        self.a = 1
+    def __init__(self, data_path):
+        self.data_path = data_path
     def run_pillow(self,img,quality,ext,i=0):
         img_name = str(format(i,'04d'))+ext
         image = Image.fromarray(img)
@@ -16,7 +16,7 @@ class simpleCompress():
         new_size = os.stat(os.path.join(os.getcwd(), img_name)).st_size/1024
         os.remove(os.path.join(os.getcwd(), '000000'+ext))
         return new_size
-    def run_opencv(self,img,ext,qual_param,quality=100,i=0,a=0):
+    def run_opencv(self,img,ext,qual_param,quality=100,i=0,a=0,persistent_record=False):
         if a == 1: # strong compress
             quality = 20
         elif a == 2: # weak compress
@@ -25,10 +25,11 @@ class simpleCompress():
             quality = 100
         else:
             quality = 0
-        img_name = str(format(i,'04d'))+ext
+        img_name = self.data_path + str(format(i,'06d'))+ext
         cv2.imwrite(img_name, img, [qual_param, quality])
         new_size = os.stat(os.path.join(os.getcwd(), img_name)).st_size/1024 # in KB
-        os.remove(os.path.join(os.getcwd(), img_name))
+        if persistent_record is False:
+            os.remove(os.path.join(os.getcwd(), img_name))
         return new_size
     def run_opencv_encoder(self,img,ext,qual_param,quality=100,a=0):
         if a == 1: # strong compress
