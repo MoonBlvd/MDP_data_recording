@@ -36,10 +36,11 @@ def process_warning_anomaly(file_name):
     '''
     thresh1 = 0.6
     thresh2 = 0.2
-    Rt = anomalies[:,0] / np.max(anomalies[:,0])
-    Rd = anomalies[:,1] / np.max(anomalies[:,1])
-    Rb = anomalies[:,2] / np.max(anomalies[:,2])
-    Ro = anomalies[:,3] / np.max(anomalies[:,3])
+    time = anomalies[:,0]
+    Rt = anomalies[:,1] / np.max(anomalies[:,1])
+    Rd = anomalies[:,2] / np.max(anomalies[:,2])
+    Rb = anomalies[:,3] / np.max(anomalies[:,3])
+    Ro = anomalies[:,4] / np.max(anomalies[:,4])
 
     Rt[Rt>thresh1] = 2
     Rt[Rt<thresh2] = 0
@@ -60,4 +61,4 @@ def process_warning_anomaly(file_name):
     warning_anomaly = np.vstack([FCW, LDW, FSW, Rt, Rd, Rb, Ro]) # remove FSW since it was a constant in 05182017 data
     warning_anomaly = warning_anomaly.T
 
-    return warning_anomaly.astype(int)
+    return warning_anomaly.astype(int), time

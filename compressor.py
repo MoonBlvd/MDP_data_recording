@@ -12,7 +12,7 @@ class simpleCompress():
     def run_pillow(self,img,quality,ext,i=0):
         img_name = str(format(i,'04d'))+ext
         image = Image.fromarray(img)
-        image.save(img_name, ptimize=True, quality=quality)
+        image.save(img_name, optimize=True, quality=quality)
         new_size = os.stat(os.path.join(os.getcwd(), img_name)).st_size/1024
         os.remove(os.path.join(os.getcwd(), '000000'+ext))
         return new_size
@@ -22,7 +22,13 @@ class simpleCompress():
         new_size = os.stat(os.path.join(os.getcwd(), img_name)).st_size/1024
         #os.remove(os.path.join(os.getcwd(), '000000'+ext))
         return new_size
-    def run_opencv_encoder(self,img,quality,ext,qual_param):
+    def run_opencv_encoder(self,img,ext,qual_param,quality=100,a=0):
+        if a == 1: # strong compress
+            quality = 20
+        elif a == 2: # weak compress
+            quality = 80
+        elif a == 3: # no compress
+            quality = 100
         _,compressed = cv2.imencode(ext, img, [qual_param, quality])
         return 100*compressed.shape[0]*compressed.shape[1]/(img.shape[0]*img.shape[1])
     # def run_svd(self):
@@ -67,6 +73,6 @@ if __name__ == '__main__':
         # print ("OpenCV: ", new_size, "KB; Time: ",elapsed_time, 'second')
 
         start_time = time.time()
-        new_size = compressor.run_opencv_encoder(img, quality,ext, qual_param)
+        new_size = compressor.run_opencv_encoder(img, ext, qual_param,quality=quality)
         elapsed_time = time.time() - start_time
         print ("OpenCV: " + str(format(new_size,'.4f')) + "\%; Time: " + str(format(elapsed_time,'.4f')) + 'second')
