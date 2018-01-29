@@ -34,8 +34,8 @@ def process_warning_anomaly(file_name):
     '''
     Process computed anomaly scores
     '''
-    thresh1 = 0.6
-    thresh2 = 0.2
+    thresh1 = 0.7
+    thresh2 = 0.3
     time = anomalies[:,0]
     Rt = anomalies[:,1] / np.max(anomalies[:,1])
     Rd = anomalies[:,2] / np.max(anomalies[:,2])
