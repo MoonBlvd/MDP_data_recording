@@ -274,7 +274,7 @@ if __name__ == "__main__":
         prev_s = copy.deepcopy(s)
 
         possible_s,_ ,memory_cost = state_update(s,optimal_action,memory_cost, img)
-        if optimal_action >= 0:
+        if optimal_action >= 1:
             compressor.run_opencv(img, ext, cv2.IMWRITE_JPEG_QUALITY, i=i, a=optimal_action,persistent_record=True)
 
 
