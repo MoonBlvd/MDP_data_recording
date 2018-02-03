@@ -6,6 +6,8 @@ from compressor import simpleCompress
 import cv2
 import copy
 import time
+from joblib import Parallel
+import multiprocessing as mp
 
 horizon = 3
 _lambda = 0.9
@@ -14,7 +16,7 @@ num_warning = 3
 num_anomaly = 4
 num_WA = num_warning + num_anomaly
 min_frames = 20
-max_memo = 10000 # memory threshold in KBs
+max_memo = 100 # memory threshold in KBs
 action_list = [0,1,2,3]
 
 warning_anomaly_state_space = 2**num_warning * 3**num_anomaly # 3 binary warnings and 4 abstracted anomaly scores
@@ -34,7 +36,8 @@ memory_cost = 0
 
 ext = '.jpeg'
 # weighting
-w = [1,2,1,1]
+w = [1.5,1,1,1,0.2]
+#reward = w[0]*R_anomaly + w[1]*R_recording + w[2]*R_memory + w[3]*R_freq + w[4]*R_compress
 '''
 load pre-generated WA_state list
 '''
@@ -103,7 +106,13 @@ def state_update(s,a,memo_cost,img):
     # else:
     if a>=1: # if record, check whether memory exceed the max.
         # new_s['memo'] += compressor.run_opencv_encoder(img, ext, cv2.IMWRITE_JPEG_QUALITY,a=a)
-        new_s['memo'] += compressor.run_opencv(img,ext,cv2.IMWRITE_JPEG_QUALITY,a=a)
+        #new_s['memo'] += compressor.run_opencv(img,ext,cv2.IMWRITE_JPEG_QUALITY,a=a)
+        if a == 1:
+            new_s['memo'] += 0.05
+        elif a == 2:
+            new_s['memo'] += 0.15
+        elif a == 3:
+            new_s['memo'] += 1
         memo_cost += 1
         #memo_state = int(np.floor(memo_cost/max_memo)) # memo state becomes how much the memory limitation is exceeded
         #memo_state = 5 if memo_state > 5 else memo_state
@@ -145,22 +154,27 @@ def compute_reward(new_s, s, a):
     R_recording = compute_recording_reward(new_s,s)
     R_memory = compute_memo_reward(new_s, s)
     R_freq = compute_freq_reward(new_s, s)
+    R_compress = compute_compression_reward(new_s, s)
 
-    reward = w[0]*R_anomaly + w[1]*R_recording + w[2]*R_memory + w[3]*R_freq
+    reward = w[0]*R_anomaly + w[1]*R_recording + w[2]*R_memory + w[3]*R_freq + w[4]*R_compress
     return float(reward)
 
 def compute_recording_reward(new_s,s):
     if new_s['rec'] >= 1:
         R_recording = -1 # negative reward if recording
-    elif s['rec'] >= 1 and new_s['rec'] == 0:
-        R_recording = 1  # positive reward if stop recording
+    #elif s['rec'] >= 1 and new_s['rec'] == 0:
+    #    R_recording = 1  # positive reward if stop recording
     else:
         R_recording = 0
     return R_recording
 
 def compute_warning_anomaly_reward(new_s,s):
     if new_s['rec'] == 1:
-        R_anomaly = new_s['u']  # positive anomaly reward if start recording
+        R_anomaly = 0.2 * new_s['u']  # positive anomaly reward if start recording
+    elif new_s['rec'] == 2:
+        R_anomaly = 0.8 * new_s['u']  # positive anomaly reward if start recording
+    elif new_s['rec'] == 3:
+        R_anomaly = 1.0 * new_s['u']  # positive anomaly reward if start recording
     else:
         R_anomaly = 0
     return R_anomaly
@@ -170,26 +184,41 @@ def compute_memo_reward(new_s,s):
         if new_s['rec'] == 0: # no record
             R_memory = 0
         elif new_s['rec']  == 1: # strong compress:
-            R_memory = - 1
+            R_memory = - 0.05 # -1
         elif new_s['rec'] == 2: # weak compress
-            R_memory = -2
+            R_memory = -0.15 #-2
         else: # record w/o compress
-            R_memory = -3
+            R_memory = -1 #-3
     else:
+        #if new_s['rec'] == 0:
+        #    R_memory = 0
+        #elif new_s['rec'] >= 1:
+        #    R_memory = -1
         R_memory = 0
     return R_memory
 
 def compute_freq_reward(new_s,s):
-    if new_s['rec'] == 1 and s['freq'][s['i']] > freq_threshold:
+    if new_s['rec'] >= 1 and s['freq'][s['i']] > freq_threshold:
         R_freq = - 1
     else:
         R_freq = 0
     return R_freq
 
+def compute_compression_reward(new_s,s):
+    if new_s['rec'] == 0 or new_s['rec'] == 3: # record and discard is not penalized
+        compression_reward = 0
+    else:
+        # if new_s['rec'] == 1: # a strong compression should be penalized
+        compression_reward = -1
+    return compression_reward
+
 def decision_tree(s,i,memo_cost,img):
     inner_score_list = np.zeros(len(action_list)) # there are multiple possible new states given state and action
     outer_score_list = []
+
+    # outer_score_list, inner_score_list = Parallel(n_jobs=4)(decision_tree_worker(memo_cost, i,j,inner_score_list, outer_score_list, s, a, img) for j,a in enumerate(action_list))
     for j,a in enumerate(action_list):
+        # outer_score_list, inner_score_list = pool.apply_async(decision_tree_worker(memo_cost, i,j,inner_score_list, outer_score_list, s, a, img))
         new_s, probs, memo_cost = state_update(s, a, memo_cost, img) # should output list of possible new_s and their probs
         tmp = np.zeros(len(action_list)**(horizon-i))
         for k, possible_s in enumerate(new_s):
@@ -204,10 +233,28 @@ def decision_tree(s,i,memo_cost,img):
         return outer_score_list.astype(float)
     return inner_score_list.astype(float)
 
+# def decision_tree_worker(memo_cost, i,j,inner_score_list, outer_score_list, s, a, img):
+#     return DT_inner(memo_cost, i,j,inner_score_list, outer_score_list, s, a, img)
+#
+# def DT_inner(memo_cost, i,j,inner_score_list, outer_score_list, s, a, img):
+#     new_s, probs, memo_cost = state_update(s, a, memo_cost, img)  # should output list of possible new_s and their probs
+#     tmp = np.zeros(len(action_list) ** (horizon - i))
+#     for k, possible_s in enumerate(new_s):
+#         new_r = compute_reward(possible_s, s, a)
+#         inner_score_list[j] += probs[k] * new_r
+#         # pdb.set_trace()
+#         if i < horizon:
+#             # outer_score_list = np.append(outer_score_list, new_r + _lambda* decision_tree(possible_s,i+1))
+#             tmp += probs[k] * (new_r + _lambda * decision_tree(possible_s, i + 1, memo_cost, img))
+#     outer_score_list = np.append(outer_score_list, tmp)
+#
+#     return outer_score_list,inner_score_list,
+
 def compute_ambient_state_u(anomaly_scores):
     return np.sum(anomaly_scores[0:3]) + 0.5*np.sum(anomaly_scores[3:7])
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     # initialize compressor
     output_path = 'recorded_img/05182017/'
     compressor = simpleCompress(output_path)
@@ -227,9 +274,12 @@ if __name__ == "__main__":
     num_frames = anomaly_score.shape[0]
     # anomaly_score = [0,0,0,0,0,1,1,0,1,1,1,0,1,0,0,0,0,1,1,1,0,1,0,0,0]
     prev_s = s
-    file = open('optimal_action.txt', 'w')
+    file = open(output_path + 'optimal_action.txt', 'w')
     optimal_action_path = []
     i = 0
+
+
+    # pool = mp.Pool(processes=4)
     while cap.isOpened():
         start_time = time.time()
 
@@ -240,9 +290,13 @@ if __name__ == "__main__":
             break
         '''downsample video(29.97fps) to data frame frequency(~10Hz)'''
         video_time = frame_ctr * frame_time  # + 2.8819 # the video is 30fps
+
         if video_time < time_array[i] - frame_time:
             # if video lag, keep reading video frames
+            if s['rec'] >= 1:
+                compressor.run_opencv(img, ext, cv2.IMWRITE_JPEG_QUALITY, i=i,j=frame_ctr, a=s['rec'], persistent_record=True)
             continue
+
         while video_time > time_array[i] + 2 * frame_time:
             # if message lag, keep reading message
             i = i + 1
@@ -262,6 +316,7 @@ if __name__ == "__main__":
         '''Find the optimal action'''
         max_Q = np.max(Q_value_list)
         max_idx = np.argmax(Q_value_list)
+        print ("max_idx:", max_idx)
         optimal_action = action_list[int(max_idx/len(action_list)**(horizon-1))]
 
         '''The action should be recording if it's in recording mode and buffer size is smaller than the minimum size'''
@@ -275,7 +330,7 @@ if __name__ == "__main__":
 
         possible_s,_ ,memory_cost = state_update(s,optimal_action,memory_cost, img)
         if optimal_action >= 1:
-            compressor.run_opencv(img, ext, cv2.IMWRITE_JPEG_QUALITY, i=i, a=optimal_action,persistent_record=True)
+            compressor.run_opencv(img, ext, cv2.IMWRITE_JPEG_QUALITY, i=i, j=frame_ctr, a=optimal_action,persistent_record=True)
 
 
         s = possible_s[0] # since the system state portion is deterministic given action, we can select any possible state as the new state.
