@@ -64,7 +64,8 @@ if __name__ == '__main__':
                             [0,1,0],
                             [1,0,0]])
     value_list = np.array([0.04319829,5.37383929,7.80472283,10.10175974])
-
+    print(states_list)
+    print(value_list)
     num_frames = three_warnings.shape[0]
     file = open(output_path + 'optimal_action.txt', 'w')
     optimal_action_path = []
@@ -120,6 +121,8 @@ if __name__ == '__main__':
         moving_buf['state'].append(test_data[i, :])
         moving_buf['value'].append(compute_raw_score(states_list, test_data[i, :], value_list))
         img_size = compressor.run_opencv(img, '.jpeg', cv2.IMWRITE_JPEG_QUALITY, quality=100, i=0, j=0, a=3, persistent_record=False)
+        print(img_size)
+        input("continue")
         moving_buf['size'].append(img_size)  # assume the img size follows a normal distribution
         img_buf.append(img)
 
