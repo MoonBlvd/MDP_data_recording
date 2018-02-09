@@ -187,6 +187,7 @@ if __name__ == '__main__':
             print("=======================")
             print("Buffer number: ", k)
             print("Local optimal recording: ", np.where(np.array(sorted_action)>0)[0])
+            input("continue...")
             # start the next buffer
             k += 1
             overlap_policy = sorted_action[buf_size - overlap:]
