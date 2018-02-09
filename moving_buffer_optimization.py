@@ -200,6 +200,11 @@ if __name__ == '__main__':
 
         i += 1
 
+    file = open(output_path + 'optimal_action.txt', 'w')
+    for policy in optimal_policy:
+        file.write("%s\n" % policy)
+    file.close()
+
     plt.figure(1)
     plt.plot(test_data[:, 0], 'r')
     plt.plot(test_data[:, 1], 'g')
