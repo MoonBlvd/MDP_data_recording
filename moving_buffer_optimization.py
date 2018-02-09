@@ -58,6 +58,13 @@ if __name__ == '__main__':
     # anomaly_score, time_array = process_warning_anomaly(file_name)
     # num_frames = anomaly_score.shape[0]
     three_warnings, states_list, value_list, time_array = process_data()
+    '''Use statics from a larger data set'''
+    states_list = np.array([[0,0,0],
+                            [0,0,1],
+                            [0,1,0],
+                            [1,0,0]])
+    value_list = np.array([0.04319829,5.37383929,7.80472283,10.10175974])
+
     num_frames = three_warnings.shape[0]
     file = open(output_path + 'optimal_action.txt', 'w')
     optimal_action_path = []
