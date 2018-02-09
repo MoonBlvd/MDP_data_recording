@@ -84,6 +84,9 @@ if __name__ == '__main__':
     test_data = three_warnings[0:27655, :]  # [6500:8500,:]#[47000:47500,:]#[15200:15400,:]
     num_data = test_data.shape[0]
 
+    print("Data reading succeeded!")
+    input("continue...")
+
     # pool = mp.Pool(processes=4)
     while cap.isOpened():
         start_time = time.time()
