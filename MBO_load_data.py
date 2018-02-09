@@ -59,10 +59,10 @@ def process_data():
     '''Compute probabilities of Warning variables, as value of data'''
     three_warnings = np.hstack([np.reshape(FCW,(len(FCW),1)),np.reshape(LDW,(len(LDW),1)),np.reshape(FSW,(len(FSW),1))])
     states_list,state_counts = np.unique(three_warnings,axis=0,return_counts=True)
-    print (states_list)
-    print (state_counts)
+    # print (states_list)
+    # print (state_counts)
     p_list = state_counts/three_warnings.shape[0]
-    print (p_list)
+    # print (p_list)
     value_list = -np.log2(p_list)
 
     time = anomalies[:, 0]
