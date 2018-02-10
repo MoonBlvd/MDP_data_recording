@@ -274,23 +274,35 @@ if __name__ == '__main__':
                         event_length_list.append(event_length)
                         event_length = 0
 
+            if total_memory_cost == 0:
+                anomaly_memory_ratio = 0
+                event_memory_ratio = 0
+            else:
+                anomaly_memory_ratio = recorded_anomalies/(total_memory_cost/1024)
+                event_memory_ratio = recorded_events/(total_memory_cost/1024)
 
-            anomaly_memory_ratio = recorded_anomalies/(total_memory_cost/1024)
-            event_memory_ratio = recorded_events/(total_memory_cost/1024)
+            if len(event_length_list) == 0:
+                min_event_length = 0
+                max_event_length = 0
+                mean_event_length = 0
+            else:
+                min_event_length = np.min(event_length_list)
+                max_event_length = np.max(event_length_list)
+                mean_event_length = np.mean(event_length_list)
             print ("Number of total recorded frames: " + str(total_recorded))
             print ("Total memory cost: " + str(total_memory_cost/1024) + " MB   /   " + str(total_memory_cost/1024**2) + " GB")
             print ("Event length list: ", event_length_list)
             print ("The anomaly/memory ratio is: " + str(anomaly_memory_ratio) + " frame/MB")
             print ("The event/memory ratio is: " + str(event_memory_ratio) + " event/MB")
-            print ("The min event length is: " + str(np.min(event_length_list)))
-            print ("The max event length is: " + str(np.max(event_length_list)))
-            print ("The mean event length is: " + str(np.mean(event_length_list)))
+            print ("The min event length is: " + str(min_event_length))
+            print ("The max event length is: " + str(max_event_length))
+            print ("The mean event length is: " + str(mean_event_length))
 
             anomaly_memory_ratio_matrix[i,j] = anomaly_memory_ratio
             event_memory_ratio_matrix[i,j] = event_memory_ratio
-            min_event_length_matrix[i,j] = np.min(event_length_list)
-            max_event_length_matrix[i,j] = np.max(event_length_list)
-            mean_event_length_matrix[i,j] = np.mean(event_length_list)
+            min_event_length_matrix[i,j] = min_event_length
+            max_event_length_matrix[i,j] = max_event_length
+            mean_event_length_matrix[i,j] = mean_event_length
 
     print (anomaly_memory_ratio_matrix)
     print (event_memory_ratio_matrix)
