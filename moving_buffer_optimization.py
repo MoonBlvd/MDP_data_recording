@@ -216,7 +216,7 @@ def run_MBO(cap,test_data,
 '''Run moving buffer optimization'''
 if __name__ == '__main__':
     output_path = 'recorded_img/05182017/'
-    file = open(output_path + 'optimal_action.txt', 'w')
+    # file = open(output_path + 'optimal_action.txt', 'w')
 
     compressor = simpleCompress(output_path)
     # read video
@@ -237,7 +237,11 @@ if __name__ == '__main__':
     print("Data reading succeeded!")
     input("continue...")
 
+    '''Run MBO'''
     optimal_policy, total_memory_cost = run_MBO(cap,test_data,states_list,value_list,time_array)
+
+
+    '''Compute and print result'''
     total_recorded = len(np.where(optimal_policy > 0)[0])
     recorded_anomalies= 0
     recorded_events = 0
