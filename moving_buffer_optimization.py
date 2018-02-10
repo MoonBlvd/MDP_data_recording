@@ -175,7 +175,7 @@ if __name__ == '__main__':
 
 
             '''Write images to hard disk'''
-            for j,policy in sorted_action:
+            for j,policy in enumerate(sorted_action):
                 if len(overlap_policy) > 0 and j < overlap:
                     if overlap_policy[j] > 0: # if the data has been recorded, don't record again
                         continue
@@ -187,7 +187,7 @@ if __name__ == '__main__':
             print("=======================")
             print("Buffer number: ", k)
             print("Local optimal recording: ", np.where(np.array(sorted_action)>0)[0])
-            input("continue...")
+            #input("continue...")
             # start the next buffer
             k += 1
             overlap_policy = sorted_action[buf_size - overlap:]
