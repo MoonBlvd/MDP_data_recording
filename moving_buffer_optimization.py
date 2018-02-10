@@ -63,7 +63,7 @@ def run_MBO(cap,test_data,
     overlap = 50
 
     sigma = 10
-    memo_max = 200000
+    memo_max = 200000000
     moving_buf = {}
     moving_buf['size'] = []
     moving_buf['value'] = []
@@ -135,7 +135,7 @@ def run_MBO(cap,test_data,
             sorted_action = [float(policy.value[0]) for policy in pi]
 
             '''Save data, update storage capacity'''
-            memo_tracker += float(np.dot(sorted_action, np.array(moving_buf['size'])))
+            # memo_tracker += float(np.dot(sorted_action, np.array(moving_buf['size'])))
 
             '''Append the sorted action to the whole action list'''
             if k == 0:
