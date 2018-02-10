@@ -292,9 +292,9 @@ if __name__ == '__main__':
             max_event_length_matrix[i,j] = np.max(event_length_list)
             mean_event_length_matrix[i,j] = np.mean(event_length_list)
 
-    print anomaly_memory_ratio_matrix
-    print event_memory_ratio_matrix
-    print min_event_length_matrix
-    print max_event_length_matrix
-    print mean_event_length_matrix
+    print (anomaly_memory_ratio_matrix)
+    print (event_memory_ratio_matrix)
+    print (min_event_length_matrix)
+    print (max_event_length_matrix)
+    print (mean_event_length_matrix)
 
