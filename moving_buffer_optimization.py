@@ -222,7 +222,7 @@ if __name__ == '__main__':
     # read video
     video_path = '../Smart_Black_Box/data/videos/'
     video_name = '05182017_video1080p.mp4'
-    cap = cv2.VideoCapture(video_path + video_name)
+
     three_warnings, states_list, value_list, time_array = process_data()
     test_data = three_warnings[0:27655, :]  # [6500:8500,:]#[47000:47500,:]#[15200:15400,:]
 
@@ -237,39 +237,64 @@ if __name__ == '__main__':
     print("Data reading succeeded!")
     input("continue...")
 
-    '''Run MBO'''
-    optimal_policy, total_memory_cost = run_MBO(cap,test_data,states_list,value_list,time_array)
+    eta_list = [1,2,3,4,5]
+    zeta_list = [5,6,7,8,9,10]
+    anomaly_memory_ratio_matrix = np.zeros([len(eta_list), len(zeta_list)])
+    event_memory_ratio_matrix = np.zeros([len(eta_list), len(zeta_list)])
+    min_event_length_matrix = np.zeros([len(eta_list), len(zeta_list)])
+    max_event_length_matrix = np.zeros([len(eta_list), len(zeta_list)])
+    mean_event_length_matrix = np.zeros([len(eta_list), len(zeta_list)])
+
+    for i, eta in enumerate(eta_list):
+        for j, zeta in enumerate(zeta_list):
+
+            cap = cv2.VideoCapture(video_path + video_name)
+            '''Run MBO'''
+            optimal_policy, total_memory_cost = run_MBO(cap, test_data, states_list, value_list, time_array, eta=eta, zeta=zeta)
 
 
-    '''Compute and print result'''
-    total_recorded = len(np.where(optimal_policy > 0)[0])
-    recorded_anomalies= 0
-    recorded_events = 0
-    # recorded_anomalies_event = 0
-    event_flag = False
-    event_length = 0
-    event_length_list = []
-    for i, frame in enumerate(test_data):
-        if np.sum(frame) > 0 and optimal_policy[i] > 0:
-            recorded_anomalies += 1
-        if optimal_policy[i] > 0 and optimal_policy[i-1] == 0:
-            recorded_events += 1
-            event_flag = True
-        if event_flag == True:
-            event_length += 1
-            if optimal_policy[i] == 0:
-                event_flag = False
-                event_length_list.append(event_length)
-                event_length = 0
+            '''Compute and print result'''
+            total_recorded = len(np.where(optimal_policy > 0)[0])
+            recorded_anomalies= 0
+            recorded_events = 0
+            # recorded_anomalies_event = 0
+            event_flag = False
+            event_length = 0
+            event_length_list = []
+            for k, frame in enumerate(test_data):
+                if np.sum(frame) > 0 and optimal_policy[k] > 0:
+                    recorded_anomalies += 1
+                if optimal_policy[k] > 0 and optimal_policy[k-1] == 0:
+                    recorded_events += 1
+                    event_flag = True
+                if event_flag == True:
+                    event_length += 1
+                    if optimal_policy[k] == 0:
+                        event_flag = False
+                        event_length_list.append(event_length)
+                        event_length = 0
 
 
-    anomaly_memory_ratio = recorded_anomalies/(total_memory_cost/1024)
-    event_memory_ratio = recorded_events/(total_memory_cost/1024)
-    print ("Number of total recorded frames: " + str(total_recorded))
-    print ("Total memory cost: " + str(total_memory_cost/1024) + " MB   /   " + str(total_memory_cost/1024**2) + " GB")
-    print ("Event length list: ", event_length_list)
-    print ("The anomaly/memory ratio is: " + str(anomaly_memory_ratio) + " frame/MB")
-    print ("The event/memory ratio is: " + str(event_memory_ratio) + " event/MB")
-    print ("The min event length is: " + str(np.min(event_length_list)))
-    print ("The max event length is: " + str(np.max(event_length_list)))
-    print ("The mean event length is: " + str(np.mean(event_length_list)))
+            anomaly_memory_ratio = recorded_anomalies/(total_memory_cost/1024)
+            event_memory_ratio = recorded_events/(total_memory_cost/1024)
+            print ("Number of total recorded frames: " + str(total_recorded))
+            print ("Total memory cost: " + str(total_memory_cost/1024) + " MB   /   " + str(total_memory_cost/1024**2) + " GB")
+            print ("Event length list: ", event_length_list)
+            print ("The anomaly/memory ratio is: " + str(anomaly_memory_ratio) + " frame/MB")
+            print ("The event/memory ratio is: " + str(event_memory_ratio) + " event/MB")
+            print ("The min event length is: " + str(np.min(event_length_list)))
+            print ("The max event length is: " + str(np.max(event_length_list)))
+            print ("The mean event length is: " + str(np.mean(event_length_list)))
+
+            anomaly_memory_ratio_matrix[i,j] = anomaly_memory_ratio
+            event_memory_ratio_matrix[i,j] = event_memory_ratio
+            min_event_length_matrix[i,j] = np.min(event_length_list)
+            max_event_length_matrix[i,j] = np.max(event_length_list)
+            mean_event_length_matrix[i,j] = np.mean(event_length_list)
+
+    print anomaly_memory_ratio_matrix
+    print event_memory_ratio_matrix
+    print min_event_length_matrix
+    print max_event_length_matrix
+    print mean_event_length_matrix
+
