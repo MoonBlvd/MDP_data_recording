@@ -41,33 +41,19 @@ def compute_raw_score(states_list,state,value_list):
     return value_list[tmp_i]
 
 
-'''Run moving horizon optimization'''
-if __name__ == '__main__':
-    # initialize compressor
-    output_path = 'recorded_img/05182017/'
-    compressor = simpleCompress(output_path)
-    # read video
-    video_path = '../Smart_Black_Box/data/videos/'
-    video_name = '05182017_video1080p.mp4'
-    cap = cv2.VideoCapture(video_path+video_name)
+
+
+def run_MBO(cap,test_data,
+            states_list,value_list,
+            time_array,
+            eta = 5,zeta = 10):
     frame_ctr = 0
     frame_time = 0.0333666
-
 
     # file_name = '05182017.csv'
     # anomaly_score, time_array = process_warning_anomaly(file_name)
     # num_frames = anomaly_score.shape[0]
-    three_warnings, states_list, value_list, time_array = process_data()
-    '''Use statics from a larger data set'''
-    states_list = np.array([[0,0,0],
-                            [0,0,1],
-                            [0,1,0],
-                            [1,0,0]])
-    value_list = np.array([0.04319829,5.37383929,7.80472283,10.10175974])
-    print(states_list)
-    print(value_list)
-    num_frames = three_warnings.shape[0]
-    file = open(output_path + 'optimal_action.txt', 'w')
+
     optimal_action_path = []
     i = 0
 
@@ -75,8 +61,7 @@ if __name__ == '__main__':
     img_buf = []
     buf_size = 500
     overlap = 50
-    eta = 5
-    zeta = 10
+
     sigma = 10
     memo_max = 200000
     moving_buf = {}
@@ -89,12 +74,8 @@ if __name__ == '__main__':
     memo_tracker = 0
     all_filtered_scores = []
     all_raw_scores = []
-    test_data = three_warnings[0:27655, :]  # [6500:8500,:]#[47000:47500,:]#[15200:15400,:]
+
     num_data = test_data.shape[0]
-
-    print("Data reading succeeded!")
-    input("continue...")
-
     # pool = mp.Pool(processes=4)
     while cap.isOpened():
         start_time = time.time()
@@ -123,7 +104,7 @@ if __name__ == '__main__':
         img_size = compressor.run_opencv(img, '.jpeg', cv2.IMWRITE_JPEG_QUALITY, quality=100, i=0, j=0, a=3, persistent_record=False)
         # print(img_size)
         # input("continue")
-        moving_buf['size'].append(img_size/100)  # assume the img size follows a normal distribution
+        moving_buf['size'].append(img_size/100)  # rescale the image size
         img_buf.append(img)
 
         if len(moving_buf['value']) == buf_size or i == num_data - 1:  # start to optimize if buffer is full or there is no new frame
@@ -180,10 +161,13 @@ if __name__ == '__main__':
                     if overlap_policy[j] > 0: # if the data has been recorded, don't record again
                         continue
                     elif overlap_policy[j] == 0 and policy > 0:
-                        compressor.run_opencv(img_buf[j], '.jpeg', cv2.IMWRITE_JPEG_QUALITY, quality=100, i=i-buf_size+j, j=j, a=3,persistent_record=True)
+                        written_size = compressor.run_opencv(img_buf[j], '.jpeg', cv2.IMWRITE_JPEG_QUALITY, quality=100, i=i-buf_size+j, j=j, a=3,persistent_record=False)
+                        memo_tracker += written_size
                 else:
                     if policy > 0:
-                        compressor.run_opencv(img_buf[j], '.jpeg', cv2.IMWRITE_JPEG_QUALITY, quality=100, i=i-buf_size+j, j=j, a=3, persistent_record=True)
+                        written_size = compressor.run_opencv(img_buf[j], '.jpeg', cv2.IMWRITE_JPEG_QUALITY, quality=100, i=i-buf_size+j, j=j, a=3, persistent_record=False)
+                        memo_tracker += written_size
+
             print("=======================")
             print("Buffer number: ", k)
             print("Local optimal recording: ", np.where(np.array(sorted_action)>0)[0])
@@ -200,31 +184,88 @@ if __name__ == '__main__':
             img_buf = img_buf[buf_size-overlap:]
 
         i += 1
+    return optimal_policy, memo_tracker
+    # file = open(output_path + 'optimal_action.txt', 'w')
+    # for policy in optimal_policy:
+    #     file.write("%s\n" % policy)
+    # file.close()
+    #
+    # plt.figure(1)
+    # plt.plot(test_data[:, 0], 'r')
+    # plt.plot(test_data[:, 1], 'g')
+    # plt.plot(test_data[:, 2], 'b')
+    # plt.ylim([-1, 2])
+    # plt.legend(['FCW', 'LDW', 'FSW'])
+    #
+    # plt.figure(2)
+    # plt.subplot(211)
+    # plt.plot(all_raw_scores)
+    # plt.plot(all_filtered_scores)
+    # plt.legend(['Raw data value signal', 'Filtered signal'], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+    #            ncol=2, mode="expand", borderaxespad=0.)
+    # # plt.savefig('data_value_signal.png',dpi=500)
+    #
+    # # plt.figure(3)
+    # plt.subplot(212)
+    # plt.plot(optimal_policy, 'k')
+    # plt.legend(['Optimal policy path'], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+    #            ncol=2, mode="expand", borderaxespad=0.)
+    # plt.tight_layout(pad=2)
+    # # plt.savefig('value_and_policy_MIQP.png',dpi=500)
 
+'''Run moving buffer optimization'''
+if __name__ == '__main__':
+    output_path = 'recorded_img/05182017/'
     file = open(output_path + 'optimal_action.txt', 'w')
-    for policy in optimal_policy:
-        file.write("%s\n" % policy)
-    file.close()
 
-    plt.figure(1)
-    plt.plot(test_data[:, 0], 'r')
-    plt.plot(test_data[:, 1], 'g')
-    plt.plot(test_data[:, 2], 'b')
-    plt.ylim([-1, 2])
-    plt.legend(['FCW', 'LDW', 'FSW'])
+    compressor = simpleCompress(output_path)
+    # read video
+    video_path = '../Smart_Black_Box/data/videos/'
+    video_name = '05182017_video1080p.mp4'
+    cap = cv2.VideoCapture(video_path + video_name)
+    three_warnings, states_list, value_list, time_array = process_data()
+    test_data = three_warnings[0:27655, :]  # [6500:8500,:]#[47000:47500,:]#[15200:15400,:]
 
-    plt.figure(2)
-    plt.subplot(211)
-    plt.plot(all_raw_scores)
-    plt.plot(all_filtered_scores)
-    plt.legend(['Raw data value signal', 'Filtered signal'], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-               ncol=2, mode="expand", borderaxespad=0.)
-    # plt.savefig('data_value_signal.png',dpi=500)
+    '''Use statics from a larger data set'''
+    states_list = np.array([[0, 0, 0],
+                            [0, 0, 1],
+                            [0, 1, 0],
+                            [1, 0, 0]])
+    value_list = np.array([0.04319829, 5.37383929, 7.80472283, 10.10175974])
+    print(states_list)
+    print(value_list)
+    print("Data reading succeeded!")
+    input("continue...")
 
-    # plt.figure(3)
-    plt.subplot(212)
-    plt.plot(optimal_policy, 'k')
-    plt.legend(['Optimal policy path'], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-               ncol=2, mode="expand", borderaxespad=0.)
-    plt.tight_layout(pad=2)
-    # plt.savefig('value_and_policy_MIQP.png',dpi=500)
+    optimal_policy, total_memory_cost = run_MBO(cap,test_data,states_list,value_list,time_array)
+    total_recorded = len(np.where(optimal_policy > 0)[0])
+    recorded_anomalies= 0
+    recorded_events = 0
+    # recorded_anomalies_event = 0
+    event_flag = False
+    event_length = 0
+    event_length_list = []
+    for i, frame in enumerate(test_data):
+        if np.sum(frame) > 0 and optimal_policy[i] > 0:
+            recorded_anomalies += 1
+        if optimal_policy[i] > 0 and optimal_policy[i-1] == 0:
+            recorded_events += 1
+            event_flag = True
+        if event_flag == True:
+            event_length += 1
+            if optimal_policy[i] == 0:
+                event_flag = False
+                event_length_list.append(event_length)
+                event_length = 0
+
+
+    anomaly_memory_ratio = recorded_anomalies/(total_memory_cost/1024)
+    event_memory_ratio = recorded_events/(total_memory_cost/1024)
+    print ("Number of total recorded frames: " + str(total_recorded))
+    print ("Total memory cost: " + str(total_memory_cost/1024) + " MB   /   " + str(total_memory_cost/1024**2) + " GB")
+    print ("Event length list: ", event_length_list)
+    print ("The anomaly/memory ratio is: " + str(anomaly_memory_ratio) + " frame/MB")
+    print ("The event/memory ratio is: " + str(event_memory_ratio) + " event/MB")
+    print ("The min event length is: " + str(np.min(event_length_list)))
+    print ("The max event length is: " + str(np.max(event_length_list)))
+    print ("The mean event length is: " + str(np.mean(event_length_list)))
