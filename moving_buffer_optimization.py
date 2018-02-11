@@ -13,6 +13,13 @@ import cvxopt as cvx
 from compressor import simpleCompress
 
 '''Utilities'''
+def write_csv(file_path, data):
+    with open(file_path, 'w') as csvfile:
+        # field = [field_name]
+        writer = csv.writer(csvfile)
+        for i in range(data.shape[0]):
+            writer.writerow(data[i,:])
+
 def gaussian_func(x,a,mu,sigma):
     return a*np.exp(-((x-mu)**2)/(2*sigma**2))
 def score_filter(raw_score,sigma):
@@ -309,5 +316,10 @@ if __name__ == '__main__':
     print (min_event_length_matrix)
     print (max_event_length_matrix)
     print (mean_event_length_matrix)
-    
+    write_csv('anomaly_memory_ratio', anomaly_memory_ratio_matrix)
+    write_csv('event_memory_ratio', event_memory_ratio_matrix)
+    write_csv('min_event_length', min_event_length_matrix)
+    write_csv('max_event_length', max_event_length_matrix)
+    write_csv('mean_event_length', mean_event_length_matrix)
+
 
