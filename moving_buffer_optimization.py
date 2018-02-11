@@ -237,8 +237,8 @@ if __name__ == '__main__':
     print("Data reading succeeded!")
     input("continue...")
 
-    eta_list = [1,2,3,4,5]
-    zeta_list = [5,6,7,8,9,10]
+    eta_list = [1,2,3,4,5,6,7,8,9,10]
+    zeta_list = [1,2,3,4,5,6,7,8,9,10]
     anomaly_memory_ratio_matrix = np.zeros([len(eta_list), len(zeta_list)])
     event_memory_ratio_matrix = np.zeros([len(eta_list), len(zeta_list)])
     min_event_length_matrix = np.zeros([len(eta_list), len(zeta_list)])
@@ -309,4 +309,5 @@ if __name__ == '__main__':
     print (min_event_length_matrix)
     print (max_event_length_matrix)
     print (mean_event_length_matrix)
+    
 
