@@ -319,6 +319,7 @@ if __name__ == '__main__':
     print (min_event_length_matrix)
     print (max_event_length_matrix)
     print (mean_event_length_matrix)
+    print (img_size_list)
     write_csv('img_size_05182017.csv', np.array(img_size_list))
     # write_csv('anomaly_memory_ratio.csv', anomaly_memory_ratio_matrix)
     # write_csv('event_memory_ratio.csv', event_memory_ratio_matrix)
