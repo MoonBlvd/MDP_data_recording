@@ -111,7 +111,7 @@ def run_MBO(cap,test_data,
         moving_buf['state'].append(test_data[i, :])
         moving_buf['value'].append(compute_raw_score(states_list, test_data[i, :], value_list))
         img_size = compressor.run_opencv(img, '.jpeg', cv2.IMWRITE_JPEG_QUALITY, quality=100, i=0, j=0, a=3, persistent_record=False)
-        img_size_list.append(img)
+        img_size_list.append(img_size)
         # print(img_size)
         # input("continue")
         moving_buf['size'].append(img_size/100)  # rescale the image size
