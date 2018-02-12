@@ -84,6 +84,8 @@ def run_MBO(cap,test_data,
 
     num_data = test_data.shape[0]
     # pool = mp.Pool(processes=4)
+
+    img_size_list = []
     while cap.isOpened():
         start_time = time.time()
 
@@ -109,6 +111,7 @@ def run_MBO(cap,test_data,
         moving_buf['state'].append(test_data[i, :])
         moving_buf['value'].append(compute_raw_score(states_list, test_data[i, :], value_list))
         img_size = compressor.run_opencv(img, '.jpeg', cv2.IMWRITE_JPEG_QUALITY, quality=100, i=0, j=0, a=3, persistent_record=False)
+        img_size_list.append(img)
         # print(img_size)
         # input("continue")
         moving_buf['size'].append(img_size/100)  # rescale the image size
@@ -191,7 +194,7 @@ def run_MBO(cap,test_data,
             img_buf = img_buf[buf_size-overlap:]
 
         i += 1
-    return optimal_policy, memo_tracker
+    return optimal_policy, memo_tracker,img_size_list
     # file = open(output_path + 'optimal_action.txt', 'w')
     # for policy in optimal_policy:
     #     file.write("%s\n" % policy)
@@ -244,8 +247,8 @@ if __name__ == '__main__':
     print("Data reading succeeded!")
     input("continue...")
 
-    eta_list = [1,2,3,4,5,6,7,8,9,10]
-    zeta_list = [1,2,3,4,5,6,7,8,9,10]
+    eta_list = [1]#[1,2,3,4,5,6,7,8,9,10]
+    zeta_list = [1]#[1,2,3,4,5,6,7,8,9,10]
     anomaly_memory_ratio_matrix = np.zeros([len(eta_list), len(zeta_list)])
     event_memory_ratio_matrix = np.zeros([len(eta_list), len(zeta_list)])
     min_event_length_matrix = np.zeros([len(eta_list), len(zeta_list)])
@@ -257,7 +260,7 @@ if __name__ == '__main__':
 
             cap = cv2.VideoCapture(video_path + video_name)
             '''Run MBO'''
-            optimal_policy, total_memory_cost = run_MBO(cap, test_data, states_list, value_list, time_array, eta=eta, zeta=zeta)
+            optimal_policy, total_memory_cost, img_size_list = run_MBO(cap, test_data, states_list, value_list, time_array, eta=eta, zeta=zeta)
 
 
             '''Compute and print result'''
@@ -316,10 +319,11 @@ if __name__ == '__main__':
     print (min_event_length_matrix)
     print (max_event_length_matrix)
     print (mean_event_length_matrix)
-    write_csv('anomaly_memory_ratio', anomaly_memory_ratio_matrix)
-    write_csv('event_memory_ratio', event_memory_ratio_matrix)
-    write_csv('min_event_length', min_event_length_matrix)
-    write_csv('max_event_length', max_event_length_matrix)
-    write_csv('mean_event_length', mean_event_length_matrix)
+    write_csv('img_size_05182017.csv', np.array(img_size_list))
+    # write_csv('anomaly_memory_ratio.csv', anomaly_memory_ratio_matrix)
+    # write_csv('event_memory_ratio.csv', event_memory_ratio_matrix)
+    # write_csv('min_event_length.csv', min_event_length_matrix)
+    # write_csv('max_event_length.csv', max_event_length_matrix)
+    # write_csv('mean_event_length.csv', mean_event_length_matrix)
 
 
