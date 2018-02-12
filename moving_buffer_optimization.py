@@ -11,6 +11,7 @@ import time
 import picos as pic
 import cvxopt as cvx
 from compressor import simpleCompress
+from data_reader import *
 
 '''Utilities'''
 def write_csv(file_path, data):
@@ -52,7 +53,7 @@ def compute_raw_score(states_list,state,value_list):
 
 def run_MBO(cap,test_data,
             states_list,value_list,
-            time_array,
+            time_array,img_size_list,
             eta = 5,zeta = 10):
     frame_ctr = 0
     frame_time = 0.0333666
@@ -84,12 +85,11 @@ def run_MBO(cap,test_data,
 
     num_data = test_data.shape[0]
     # pool = mp.Pool(processes=4)
-
-    img_size_list = []
+    start_time = 0
+    # img_size_list = []
     while cap.isOpened():
-        start_time = time.time()
 
-        ret,img = cap.read()
+        # ret,img = cap.read()
         frame_ctr += 1
         '''Exit if the Mobileye data is finished'''
         if i >= num_data:
@@ -110,18 +110,17 @@ def run_MBO(cap,test_data,
         '''Buffer append'''
         moving_buf['state'].append(test_data[i, :])
         moving_buf['value'].append(compute_raw_score(states_list, test_data[i, :], value_list))
-        img_size = compressor.run_opencv(img, '.jpeg', cv2.IMWRITE_JPEG_QUALITY, quality=100, i=0, j=0, a=3, persistent_record=False)
-        img_size_list.append(img_size)
-        # print(img_size)
-        # input("continue")
+        # img_size = compressor.run_opencv(img, '.jpeg', cv2.IMWRITE_JPEG_QUALITY, quality=100, i=0, j=0, a=3, persistent_record=False)
+        img_size = float(img_size_list[i])
+        # img_size_list.append(img_size)
         moving_buf['size'].append(img_size/100)  # rescale the image size
-        img_buf.append(img)
-
+        # img_buf.append(img)
         if len(moving_buf['value']) == buf_size or i == num_data - 1:  # start to optimize if buffer is full or there is no new frame
+            # print("Time elapse:",time.time() - start_time)
+            # start_time = time.time()
             buf_length = len(moving_buf['value'])
             '''Filter the score'''
             filtered_score = score_filter(np.array(moving_buf['value']), sigma)
-
             '''Init the MIQP problem'''
             prob = pic.Problem()
             pi = [prob.add_variable(str(j), 1, vtype='binary') for j in range(buf_length)]
@@ -146,7 +145,6 @@ def run_MBO(cap,test_data,
 
             '''Save data, update storage capacity'''
             # memo_tracker += float(np.dot(sorted_action, np.array(moving_buf['size'])))
-
             '''Append the sorted action to the whole action list'''
             if k == 0:
                 optimal_policy = sorted_action
@@ -171,11 +169,13 @@ def run_MBO(cap,test_data,
                     if overlap_policy[j] > 0: # if the data has been recorded, don't record again
                         continue
                     elif overlap_policy[j] == 0 and policy > 0:
-                        written_size = compressor.run_opencv(img_buf[j], '.jpeg', cv2.IMWRITE_JPEG_QUALITY, quality=100, i=i-buf_size+j, j=j, a=3,persistent_record=False)
+                        # written_size = compressor.run_opencv(img_buf[j], '.jpeg', cv2.IMWRITE_JPEG_QUALITY, quality=100, i=i-buf_size+j, j=j, a=3,persistent_record=False)
+                        written_size = img_size_list[i-buf_size+j]
                         memo_tracker += written_size
                 else:
                     if policy > 0:
-                        written_size = compressor.run_opencv(img_buf[j], '.jpeg', cv2.IMWRITE_JPEG_QUALITY, quality=100, i=i-buf_size+j, j=j, a=3, persistent_record=False)
+                        #written_size = compressor.run_opencv(img_buf[j], '.jpeg', cv2.IMWRITE_JPEG_QUALITY, quality=100, i=i-buf_size+j, j=j, a=3, persistent_record=False)
+                        written_size = img_size_list[i-buf_size+j]
                         memo_tracker += written_size
 
             print("=======================")
@@ -191,7 +191,7 @@ def run_MBO(cap,test_data,
             moving_buf['size'] = moving_buf['size'][buf_size-overlap:]
             moving_buf['value'] = moving_buf['value'][buf_size-overlap:]
             moving_buf['state'] = moving_buf['state'][buf_size-overlap:]
-            img_buf = img_buf[buf_size-overlap:]
+            # img_buf = img_buf[buf_size-overlap:]
 
         i += 1
     return optimal_policy, memo_tracker,img_size_list
@@ -232,6 +232,8 @@ if __name__ == '__main__':
     # read video
     video_path = '../Smart_Black_Box/data/videos/'
     video_name = '05182017_video1080p.mp4'
+    # load image size from csv file to save running time
+    img_size_list = read_data('data/img_size_05182017.csv')
 
     three_warnings, states_list, value_list, time_array = process_data()
     test_data = three_warnings[0:27655, :]  # [6500:8500,:]#[47000:47500,:]#[15200:15400,:]
@@ -247,20 +249,21 @@ if __name__ == '__main__':
     print("Data reading succeeded!")
     input("continue...")
 
-    eta_list = [1]#[1,2,3,4,5,6,7,8,9,10]
-    zeta_list = [1]#[1,2,3,4,5,6,7,8,9,10]
+    eta_list = [5]#[1,2,3,4,5,6,7,8,9,10]
+    zeta_list = [10]#[1,2,3,4,5,6,7,8,9,10]
     anomaly_memory_ratio_matrix = np.zeros([len(eta_list), len(zeta_list)])
     event_memory_ratio_matrix = np.zeros([len(eta_list), len(zeta_list)])
     min_event_length_matrix = np.zeros([len(eta_list), len(zeta_list)])
     max_event_length_matrix = np.zeros([len(eta_list), len(zeta_list)])
     mean_event_length_matrix = np.zeros([len(eta_list), len(zeta_list)])
-
+    number_of_events_matrix = np.zeros([len(eta_list), len(zeta_list)])
+    number_of_frames_matrix = np.zeros([len(eta_list), len(zeta_list)])
     for i, eta in enumerate(eta_list):
         for j, zeta in enumerate(zeta_list):
 
             cap = cv2.VideoCapture(video_path + video_name)
             '''Run MBO'''
-            optimal_policy, total_memory_cost, img_size_list = run_MBO(cap, test_data, states_list, value_list, time_array, eta=eta, zeta=zeta)
+            optimal_policy, total_memory_cost, img_size_list = run_MBO(cap, test_data, states_list, value_list, time_array, img_size_list,eta=eta, zeta=zeta)
 
 
             '''Compute and print result'''
@@ -300,6 +303,7 @@ if __name__ == '__main__':
                 max_event_length = np.max(event_length_list)
                 mean_event_length = np.mean(event_length_list)
             print ("Number of total recorded frames: " + str(total_recorded))
+            print ("NUmber of total recorded events:" + str(recorded_events))
             print ("Total memory cost: " + str(total_memory_cost/1024) + " MB   /   " + str(total_memory_cost/1024**2) + " GB")
             print ("Event length list: ", event_length_list)
             print ("The anomaly/memory ratio is: " + str(anomaly_memory_ratio) + " frame/MB")
@@ -313,14 +317,17 @@ if __name__ == '__main__':
             min_event_length_matrix[i,j] = min_event_length
             max_event_length_matrix[i,j] = max_event_length
             mean_event_length_matrix[i,j] = mean_event_length
+            number_of_events_matrix[i,j] = recorded_events
+            number_of_frames_matrix[i,j] = total_recorded
 
     print (anomaly_memory_ratio_matrix)
     print (event_memory_ratio_matrix)
     print (min_event_length_matrix)
     print (max_event_length_matrix)
     print (mean_event_length_matrix)
-    print (img_size_list)
-    write_csv('img_size_05182017.csv', np.array(img_size_list))
+    print (number_of_events_matrix)
+    print (number_of_frames_matrix)
+    # write_csv('img_size_05182017.csv', np.array(img_size_list))
     # write_csv('anomaly_memory_ratio.csv', anomaly_memory_ratio_matrix)
     # write_csv('event_memory_ratio.csv', event_memory_ratio_matrix)
     # write_csv('min_event_length.csv', min_event_length_matrix)
