@@ -317,7 +317,6 @@ if __name__ == '__main__':
             '''Run MBO'''
             optimal_policy, total_memory_cost, img_size_list = run_MBO(cap, test_data, states_list, value_list, time_array, img_size_list,eta=eta, zeta=zeta)
 
-
             '''Compute and print result'''
             total_recorded = len(np.where(optimal_policy > 0)[0])
             recorded_anomalies= 0
@@ -385,5 +384,3 @@ if __name__ == '__main__':
     # write_csv('min_event_length.csv', min_event_length_matrix)
     # write_csv('max_event_length.csv', max_event_length_matrix)
     # write_csv('mean_event_length.csv', mean_event_length_matrix)
-
-
