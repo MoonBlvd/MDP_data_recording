@@ -12,6 +12,7 @@ import picos as pic
 import cvxopt as cvx
 from compressor import simpleCompress
 from data_reader import *
+memo_max = 2000000
 
 '''Utilities'''
 def write_csv(file_path, data):
@@ -48,8 +49,43 @@ def compute_raw_score(states_list,state,value_list):
     tmp_i = np.where((states_list == state).all(axis=1))[0]
     return value_list[tmp_i]
 
+def supervisor_(recoring_list,
+                recording_frame_index_list,
+                memory_list, value_list):
+    supervisor_policy = supervisor_optimization(recoring_list, memory_list, value_list)
+    memo_tracker = np.dot(memory_list, supervisor_policy)
+    remove_idx = np.where(supervisor_policy==0)[0]
+    for idx in remove_idx:
+        del memory_list[int(idx)]
+        del value_list[int(idx)]
+        del recording_frame_index_list[int(idx)]
 
+    return recording_frame_index_list, memory_list, value_list
 
+def supervisor_optimization(memory_list, value_list):
+    num_recordings = len(memory_list)
+    '''Init the MIQP problem'''
+    prob = pic.Problem()
+    pi = [prob.add_variable(str(j), 1, vtype='binary') for j in range(num_recordings)]
+    size = pic.new_param('size', memory_list]
+    value = pic.new_param('value', value_list)
+
+    '''Add objective function'''
+    obj_func = 0
+    for j in range(1, num_recordings):
+        obj_func += value_list[j]  * pi[j]
+    prob.set_objective('max', obj_func)
+
+    '''Add constraint'''
+    prob.add_constraint(pic.sum([size[j] * pi[j] for j in range(buf_length)],  # summands
+                                'j',  # name of the index
+                                '[buf_length]'  # set to which the index belongs
+                                ) < memo_max
+                        )
+    '''Solve'''
+    sol = prob.solve(solver='gurobi', verbose=0)
+    sorted_action = [float(policy.value[0]) for policy in pi]
+    return sorted_action
 
 def run_MBO(cap,test_data,
             states_list,value_list,
@@ -71,7 +107,7 @@ def run_MBO(cap,test_data,
     overlap = 50
 
     sigma = 10
-    memo_max = 200000000
+
     moving_buf = {}
     moving_buf['size'] = []
     moving_buf['value'] = []
@@ -87,6 +123,10 @@ def run_MBO(cap,test_data,
     # pool = mp.Pool(processes=4)
     start_time = 0
     # img_size_list = []
+    recording_frame_index_list = []
+    memory_list = []
+    value_list = []
+    
     while cap.isOpened():
 
         # ret,img = cap.read()
@@ -150,6 +190,18 @@ def run_MBO(cap,test_data,
                 optimal_policy = sorted_action
                 all_filtered_scores = filtered_score
                 all_raw_scores = np.array(moving_buf['value'])
+
+                # size, value and frame indeces for recordings
+
+
+
+
+
+
+
+
+
+
             else:
                 # update the overlapped policy and score if the newly computed are better
                 tmp_end = len(optimal_policy)
