@@ -19,7 +19,6 @@ from scipy.optimize import minimize
 memo_max = 500000
 inflation_factor = 1.001
 
-
 '''Utilities'''
 def write_csv(file_path, data):
     with open(file_path, 'w') as csvfile:
@@ -306,7 +305,6 @@ def run_MBO(cap,test_data,
                 optimal_policy = sorted_action
                 all_filtered_scores = filtered_score
                 all_raw_scores = np.array(moving_buf['value'])
-
                 # size, value and frame indeces for
                 tmp_recording = [] # used to save (value, index, cost) of each frame in a recording
                 recording_heapq,tmp_recording,total_recording_number = \
@@ -318,7 +316,6 @@ def run_MBO(cap,test_data,
                         optimal_policy,
                         filtered_score,
                         moving_buf)
-
             else:
                 current_buf_size = len(sorted_action)
                 # tmp_recording = []
