@@ -36,7 +36,13 @@ def comp_qual(qual):
     #compression_ratio[np.where(compression_ratio > 1)] = 1
     #compression_ratio[np.where(compression_ratio < 0)] = 0
 
-    compression_ratio = 0.10138*np.tan(1.4697608*qual)
+    # compression_ratio = 0.10138*np.tan(1.4697608*qual)
+    # if qual > 0.7857:
+    #     compression_ratio = (4.2569e-5)*np.exp(18.2793*qual-8.4506)+0.2097
+    # else:
+    #     compression_ratio = 0.2869*qual
+    x0 = 0.7857
+    compression_ratio = np.piecewise(qual, [qual < x0, qual >= x0], [lambda qual: 0.2869*qual, lambda qual: (4.2569e-5)*np.exp(18.2793*qual-8.4506)+0.2097])
     return compression_ratio
 
 def score_filter(raw_score,sigma):
@@ -424,7 +430,8 @@ def run_MBO(cap,test_data,
     # plt.subplot(212)
     # plt.plot(optimal_policy, 'k')
     # plt.legend(['Optimal policy path'], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-    #            ncol=2, mode="expand", borderaxespad=0.)
+    #            ncol=2, mode="expand", bls
+    # orderaxespad=0.)
     # plt.tight_layout(pad=2)
     # # plt.savefig('value_and_policy_MIQP.png',dpi=500)
 

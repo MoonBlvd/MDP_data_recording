@@ -9,10 +9,13 @@ def read_data(file_path):
     with open(file_path, 'r') as file:
         reader = csv.reader(file, delimiter = ',')
         for line in reader:
-            line = np.array(line, dtype = 'float') # str2float
             if i == 0:
-                data = line
+                i = i+1
             else:
-                data = np.vstack((data, line))
-            i += 1
+                line = np.array(line, dtype = 'float') # str2float
+                if i == 1:
+                    data = line
+                else:
+                    data = np.vstack((data, line))
+                i += 1
     return data
